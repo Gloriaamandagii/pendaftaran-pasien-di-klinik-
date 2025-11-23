@@ -1,0 +1,990 @@
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  Home,
+  Send,
+  Plus,
+  Menu,
+  X,
+  User,
+  Mail,
+  Phone,
+  MessageSquare,
+  FileText,
+  Calendar,
+  TrendingUp,
+  CheckCircle,
+  Clock,
+  LogOut,
+  Trash2,
+  Eye,
+  Edit,
+} from "lucide-react";
+
+/**
+ * Komponen Halaman Dashboard Admin Klinik
+ * Dashboard untuk mengelola pendaftaran pasien
+ *
+ * Features:
+ * - Statistik total pasien
+ * - Form pendaftaran pasien baru
+ * - Daftar pasien terdaftar dengan search
+ * - Aksi hapus pasien
+ * - Responsive design
+ */
+function Dashboard({ onLogout }) {
+  const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+
+  const [patients, setPatients] = useState([
+    {
+      id: 1,
+      namaLengkap: "John Dohn",
+      nik: "1234567890123456",
+      alamat: "Jl. Merdeka No. 123, Jakarta",
+      tanggalLahir: "1990-05-15",
+      nomorHp: "081234567890",
+      keluhan: "Sakit kepala dan pusing",
+      tglDaftar: "2025-11-19",
+    },
+    {
+      id: 2,
+      namaLengkap: "Peter Parker",
+      nik: "9876543210987654",
+      alamat: "Jl. Ahmad Yani No. 45, Bandung",
+      tanggalLahir: "1992-08-20",
+      nomorHp: "082345678901",
+      keluhan: "Demam tinggi dan batuk",
+      tglDaftar: "2025-11-18",
+    },
+    {
+      id: 3,
+      namaLengkap: "anna Smith",
+      nik: "5555555555555555",
+      alamat: "Jl. Sudirman No. 789, Surabaya",
+      tanggalLahir: "1988-03-10",
+      nomorHp: "085678901234",
+      keluhan: "Sakit perut akut",
+      tglDaftar: "2025-11-17",
+    },
+  ]);
+
+  const [formData, setFormData] = useState({
+    namaLengkap: "",
+    nik: "",
+    alamat: "",
+    tanggalLahir: "",
+    nomorHp: "",
+    keluhan: "",
+  });
+
+  // Handle form input change
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
+  };
+
+  // Validasi form
+  const validateForm = () => {
+    if (!formData.namaLengkap.trim()) return "Nama lengkap tidak boleh kosong";
+    if (!formData.nik.trim()) return "NIK tidak boleh kosong";
+    if (formData.nik.trim().length !== 16) return "NIK harus 16 digit";
+    if (!formData.alamat.trim()) return "Alamat tidak boleh kosong";
+    if (!formData.tanggalLahir) return "Tanggal lahir tidak boleh kosong";
+    if (!formData.nomorHp.trim()) return "Nomor HP tidak boleh kosong";
+    if (!/^(\+62|0)[0-9]{9,12}$/.test(formData.nomorHp.trim()))
+      return "Nomor HP tidak valid";
+    if (!formData.keluhan.trim()) return "Keluhan pasien tidak boleh kosong";
+    return "";
+  };
+
+  const handleCancelForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormData({
+      namaLengkap: "",
+      nik: "",
+      alamat: "",
+      tanggalLahir: "",
+      nomorHp: "",
+      keluhan: "",
+    });
+  };
+
+  const handleToggleForm = () => {
+    if (showForm && !editingId) {
+      setShowForm(false);
+    } else {
+      setEditingId(null);
+      setFormData({
+        namaLengkap: "",
+        nik: "",
+        alamat: "",
+        tanggalLahir: "",
+        nomorHp: "",
+        keluhan: "",
+      });
+      setShowForm(true);
+    }
+  };
+
+  // Handle submit form
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+
+    const error = validateForm();
+    if (error) {
+      alert("❌ " + error);
+      return;
+    }
+
+    if (editingId) {
+      setPatients(
+        patients.map((p) =>
+          p.id === editingId
+            ? {
+                ...p,
+                ...formData,
+              }
+            : p
+        )
+      );
+      alert("✅ Data pasien berhasil diupdate!");
+    } else {
+      const newPatient = {
+        id:
+          patients.length > 0 ? Math.max(...patients.map((p) => p.id)) + 1 : 1,
+        ...formData,
+        tglDaftar: new Date().toISOString().split("T")[0],
+      };
+      setPatients([newPatient, ...patients]);
+      alert("✅ Pasien berhasil ditambahkan!");
+    }
+    handleCancelForm();
+  };
+
+  // Handle delete patient
+  const handleDeletePatient = (id) => {
+    if (window.confirm("Apakah Anda yakin ingin menghapus data pasien ini?")) {
+      setPatients(patients.filter((p) => p.id !== id));
+      alert("✅ Data pasien berhasil dihapus!");
+    }
+  };
+
+  const handleEditClick = (patient) => {
+    setEditingId(patient.id);
+    setFormData({
+      namaLengkap: patient.namaLengkap,
+      nik: patient.nik,
+      alamat: patient.alamat,
+      tanggalLahir: patient.tanggalLahir,
+      nomorHp: patient.nomorHp,
+      keluhan: patient.keluhan,
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    if (window.confirm("Apakah Anda yakin ingin logout?")) {
+      onLogout();
+      navigate("/login");
+    }
+  };
+
+  // Filter patients based on search
+  const filteredPatients = patients.filter(
+    (patient) =>
+      patient.namaLengkap.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.nik.includes(searchTerm) ||
+      patient.nomorHp.includes(searchTerm)
+  );
+
+  const todayPatients = patients.filter(
+    (p) => p.tglDaftar === new Date().toISOString().split("T")[0]
+  ).length;
+
+  return (
+    <div style={styles.container}>
+      {/* Navbar */}
+      <nav style={styles.navbar}>
+        <div style={styles.navContent}>
+          <div style={styles.logo}>
+            <span style={styles.logoText}>🏥 Pendaftaran Pasien Klinik</span>
+          </div>
+
+          {/* Desktop Menu */}
+          <div style={styles.navRight}>
+            <button
+              style={styles.navButton}
+              onClick={handleToggleForm}
+              onMouseEnter={(e) =>
+                (e.target.style.background = styles.colors.primaryDark)
+              }
+              onMouseLeave={(e) =>
+                (e.target.style.background = styles.colors.primary)
+              }
+            >
+              <Plus size={20} />
+              <span style={{ marginLeft: "8px" }}>Pasien Baru</span>
+            </button>
+            <button
+              style={styles.logoutBtn}
+              onClick={handleLogout}
+              onMouseEnter={(e) =>
+                (e.target.style.background = styles.colors.dangerDark)
+              }
+              onMouseLeave={(e) =>
+                (e.target.style.background = styles.colors.danger)
+              }
+            >
+              <LogOut size={20} />
+              <span style={{ marginLeft: "8px" }}>Logout</span>
+            </button>
+          </div>
+
+          {/* Mobile Menu Toggle */}
+          <button
+            style={styles.mobileMenuBtn}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div style={styles.mobileMenu}>
+            <button
+              style={{ ...styles.navButton, width: "100%" }}
+              onClick={() => {
+                handleToggleForm();
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              <Plus size={20} /> Pasien Baru
+            </button>
+            <button
+              style={{ ...styles.logoutBtn, width: "100%" }}
+              onClick={() => {
+                handleLogout();
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              <LogOut size={20} /> Logout
+            </button>
+          </div>
+        )}
+      </nav>
+
+      {/* Main Content */}
+      <div style={styles.mainContent}>
+        {/* Statistik Section */}
+        <section style={styles.statsSection}>
+          <h1 style={styles.pageTitle}>Dashboard</h1>
+
+          <div style={styles.statsGrid}>
+            <div style={styles.statCard}>
+              <div style={styles.statIcon}>👥</div>
+              <div style={styles.statInfo}>
+                <div style={styles.statNumber}>{patients.length}</div>
+                <div style={styles.statLabel}>Total Pasien Terdaftar</div>
+              </div>
+            </div>
+            <div style={styles.statCard}>
+              <div style={styles.statIcon}>📅</div>
+              <div style={styles.statInfo}>
+                <div style={styles.statNumber}>{todayPatients}</div>
+                <div style={styles.statLabel}>Pendaftar Hari Ini</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Form Pendaftaran Pasien Baru */}
+        {showForm && (
+          <section style={styles.formSection}>
+            <div style={styles.formHeader}>
+              <h2 style={styles.formTitle}>
+                {editingId ? "✏️ Edit Data Pasien" : "📝 Daftar Pasien Baru"}
+              </h2>
+              <button style={styles.closeFormBtn} onClick={handleCancelForm}>
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleFormSubmit} style={styles.form}>
+              <div style={styles.formGrid}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Nama Lengkap *</label>
+                  <input
+                    type="text"
+                    name="namaLengkap"
+                    value={formData.namaLengkap}
+                    onChange={handleFormChange}
+                    placeholder="Masukkan nama lengkap"
+                    style={styles.input}
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>NIK (16 digit) *</label>
+                  <input
+                    type="text"
+                    name="nik"
+                    value={formData.nik}
+                    onChange={handleFormChange}
+                    placeholder="Masukkan NIK 16 digit"
+                    maxLength="16"
+                    style={styles.input}
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Tanggal Lahir *</label>
+                  <input
+                    type="date"
+                    name="tanggalLahir"
+                    value={formData.tanggalLahir}
+                    onChange={handleFormChange}
+                    style={styles.input}
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Nomor HP *</label>
+                  <input
+                    type="tel"
+                    name="nomorHp"
+                    value={formData.nomorHp}
+                    onChange={handleFormChange}
+                    placeholder="08123456789"
+                    style={styles.input}
+                  />
+                </div>
+
+                <div style={{ ...styles.formGroup, gridColumn: "1 / -1" }}>
+                  <label style={styles.label}>Alamat *</label>
+                  <textarea
+                    name="alamat"
+                    value={formData.alamat}
+                    onChange={handleFormChange}
+                    placeholder="Masukkan alamat lengkap"
+                    rows="3"
+                    style={styles.textarea}
+                  />
+                </div>
+
+                <div style={{ ...styles.formGroup, gridColumn: "1 / -1" }}>
+                  <label style={styles.label}>Keluhan Pasien *</label>
+                  <textarea
+                    name="keluhan"
+                    value={formData.keluhan}
+                    onChange={handleFormChange}
+                    placeholder="Jelaskan keluhan atau gejala"
+                    rows="3"
+                    style={styles.textarea}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.formActions}>
+                <button
+                  type="submit"
+                  style={styles.submitBtn}
+                  onMouseEnter={(e) =>
+                    (e.target.style.background = styles.colors.primaryDark)
+                  }
+                  onMouseLeave={(e) =>
+                    (e.target.style.background = styles.colors.primary)
+                  }
+                >
+                  {editingId ? (
+                    <>
+                      <CheckCircle size={18} /> Simpan Perubahan
+                    </>
+                  ) : (
+                    <>
+                      <Send size={18} /> Daftarkan Pasien
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  style={styles.cancelBtn}
+                  onClick={handleCancelForm}
+                  onMouseEnter={(e) =>
+                    (e.target.style.background = styles.colors.borderColor)
+                  }
+                  onMouseLeave={(e) =>
+                    (e.target.style.background = "transparent")
+                  }
+                >
+                  Batal
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
+
+        {/* Daftar Pasien */}
+        <section style={styles.patientSection}>
+          <div style={styles.sectionHeader}>
+            <h2 style={styles.sectionTitle}>📋 Daftar Pasien Terdaftar</h2>
+            <p style={styles.sectionSubtitle}>
+              Total: {filteredPatients.length} pasien
+            </p>
+          </div>
+
+          {/* Search Bar */}
+          <div style={styles.searchContainer}>
+            <input
+              type="text"
+              placeholder="🔍 Cari berdasarkan nama, NIK, atau nomor HP..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={styles.searchInput}
+            />
+          </div>
+
+          {/* Patients Table */}
+          {filteredPatients.length > 0 ? (
+            <div style={styles.tableContainer}>
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.tableHeader}>
+                    <th style={styles.th}>No</th>
+                    <th style={styles.th}>Nama Pasien</th>
+                    <th style={styles.th}>NIK</th>
+                    <th style={styles.th}>Nomor HP</th>
+                    <th style={styles.th}>Keluhan</th>
+                    <th style={styles.th}>Tgl Daftar</th>
+                    <th style={styles.th}>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPatients.map((patient, index) => (
+                    <tr key={patient.id} style={styles.tableRow}>
+                      <td style={styles.td}>{index + 1}</td>
+                      <td style={styles.td}>
+                        <strong>{patient.namaLengkap}</strong>
+                      </td>
+                      <td style={styles.td}>{patient.nik}</td>
+                      <td style={styles.td}>{patient.nomorHp}</td>
+                      <td style={styles.td}>{patient.keluhan}</td>
+                      <td style={styles.td}>{patient.tglDaftar}</td>
+                      <td style={styles.td}>
+                        <div style={styles.actionButtons}>
+                          <button
+                            style={styles.editBtn}
+                            onClick={() => handleEditClick(patient)}
+                            title="Edit Data"
+                            onMouseEnter={(e) =>
+                              (e.target.style.background =
+                                styles.colors.editDark)
+                            }
+                            onMouseLeave={(e) =>
+                              (e.target.style.background = styles.colors.edit)
+                            }
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            style={styles.deleteBtn}
+                            onClick={() => handleDeletePatient(patient.id)}
+                            title="Hapus"
+                            onMouseEnter={(e) =>
+                              (e.target.style.background =
+                                styles.colors.dangerDark)
+                            }
+                            onMouseLeave={(e) =>
+                              (e.target.style.background = styles.colors.danger)
+                            }
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={styles.emptyState}>
+              <p style={styles.emptyStateText}>
+                {searchTerm
+                  ? "❌ Pasien tidak ditemukan"
+                  : "📭 Belum ada pasien terdaftar"}
+              </p>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Footer */}
+      <footer style={styles.footer}>
+        <p style={styles.footerText}>
+          © 2025 Aplikasi Pendaftaran Pasien - Aplikasi Sehat. Semua Hak
+          Dilindungi
+        </p>
+      </footer>
+    </div>
+  );
+}
+
+// Inline Styles
+const colors = {
+  primary: "rgb(59 130 246)",
+  primaryDark: "rgb(37 99 235)",
+  danger: "rgb(239 68 68)",
+  dangerDark: "rgb(220 38 38)",
+  edit: "rgb(245 158 11)",
+  editDark: "rgb(217 119 6)",
+  background: "rgb(243 244 246)",
+  surface: "#FFFFFF",
+  textPrimary: "rgb(17 24 39)",
+  textSecondary: "rgb(107 114 128)",
+  borderColor: "rgb(229 231 235)",
+};
+
+const styles = {
+  colors,
+  container: {
+    minHeight: "100vh",
+    backgroundColor: colors.background,
+    fontFamily: "'Inter', sans-serif",
+    display: "flex",
+    flexDirection: "column",
+  },
+  navbar: {
+    backgroundColor: colors.surface,
+    borderBottom: `1px solid ${colors.borderColor}`,
+    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+    position: "sticky",
+    top: 0,
+    zIndex: 100,
+  },
+  navContent: {
+    maxWidth: "1600px",
+    margin: "0 auto",
+    padding: "16px 30px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+  },
+  logo: {
+    fontSize: "1.4rem",
+    fontWeight: "800",
+    color: colors.primary,
+  },
+  logoText: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  navRight: {
+    display: "flex",
+    gap: "16px",
+    alignItems: "center",
+  },
+  navButton: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "10px 20px",
+    backgroundColor: colors.primary,
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "600",
+    transition: "all 0.2s ease-in-out",
+  },
+  logoutBtn: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "10px 20px",
+    backgroundColor: colors.danger,
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "600",
+    transition: "all 0.2s ease-in-out",
+  },
+  mobileMenuBtn: {
+    display: "none",
+    background: "none",
+    border: "none",
+    color: colors.primary,
+    cursor: "pointer",
+    fontSize: "24px",
+  },
+  mobileMenu: {
+    display: "none",
+    borderTop: `1px solid ${colors.borderColor}`,
+    padding: "12px 20px",
+    gap: "10px",
+    flexDirection: "column",
+    backgroundColor: colors.primary,
+  },
+  mainContent: {
+    flex: 1,
+    maxWidth: "1600px",
+    margin: "0 auto",
+    padding: "40px 30px",
+    width: "100%",
+  },
+  pageTitle: {
+    fontSize: "2.25rem",
+    color: colors.textPrimary,
+    marginBottom: "30px",
+    fontWeight: "800",
+  },
+  statsSection: {
+    marginBottom: "40px",
+  },
+  statsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: "24px",
+  },
+  statCard: {
+    backgroundColor: colors.surface,
+    padding: "25px",
+    borderRadius: "12px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+    display: "flex",
+    gap: "20px",
+    alignItems: "center",
+    transition: "all 0.3s ease",
+    border: `1px solid ${colors.borderColor}`,
+  },
+  statIcon: {
+    fontSize: "2.5rem",
+    padding: "10px",
+    borderRadius: "50%",
+    backgroundColor: `${colors.primary}1A`,
+    color: colors.primary,
+  },
+  statInfo: {
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: "2rem",
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  statLabel: {
+    fontSize: "0.9rem",
+    color: colors.textSecondary,
+    marginTop: "5px",
+  },
+  formSection: {
+    backgroundColor: colors.surface,
+    padding: "40px",
+    borderRadius: "16px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+    marginBottom: "40px",
+    border: `1px solid ${colors.borderColor}`,
+  },
+  formHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "30px",
+    borderBottom: `2px solid ${colors.borderColor}`,
+    paddingBottom: "20px",
+  },
+  formTitle: {
+    fontSize: "1.75rem",
+    color: colors.textPrimary,
+    margin: 0,
+    fontWeight: "700",
+  },
+  closeFormBtn: {
+    background: "transparent",
+    border: "none",
+    color: colors.textSecondary,
+    cursor: "pointer",
+    fontSize: "28px",
+    transition: "color 0.2s ease",
+  },
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "25px",
+  },
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: "20px",
+  },
+  formGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  label: {
+    fontSize: "0.9rem",
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  input: {
+    padding: "12px 16px",
+    border: `1px solid ${colors.borderColor}`,
+    borderRadius: "8px",
+    fontSize: "1rem",
+    fontFamily: "inherit",
+    transition: "all 0.2s ease",
+    color: colors.textPrimary,
+    backgroundColor: `${colors.background}80`,
+  },
+  textarea: {
+    padding: "12px 16px",
+    border: `1px solid ${colors.borderColor}`,
+    borderRadius: "8px",
+    fontSize: "1rem",
+    fontFamily: "inherit",
+    resize: "vertical",
+    transition: "all 0.2s ease",
+    color: colors.textPrimary,
+    backgroundColor: `${colors.background}80`,
+  },
+  formActions: {
+    display: "flex",
+    gap: "12px",
+    justifyContent: "flex-end",
+    marginTop: "20px",
+  },
+  submitBtn: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "12px 28px",
+    backgroundColor: colors.primary,
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "600",
+    transition: "all 0.2s ease-in-out",
+    fontSize: "1rem",
+  },
+  cancelBtn: {
+    padding: "12px 28px",
+    backgroundColor: "transparent",
+    color: colors.textSecondary,
+    border: `1px solid ${colors.borderColor}`,
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "600",
+    transition: "all 0.2s ease-in-out",
+    fontSize: "1rem",
+  },
+  patientSection: {
+    backgroundColor: colors.surface,
+    padding: "40px",
+    borderRadius: "16px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+    border: `1px solid ${colors.borderColor}`,
+  },
+  sectionHeader: {
+    marginBottom: "30px",
+  },
+  sectionTitle: {
+    fontSize: "1.75rem",
+    color: colors.textPrimary,
+    margin: "0 0 5px 0",
+    fontWeight: "700",
+  },
+  sectionSubtitle: {
+    fontSize: "1rem",
+    color: colors.textSecondary,
+    margin: 0,
+  },
+  searchContainer: {
+    marginBottom: "20px",
+  },
+  searchInput: {
+    width: "100%",
+    padding: "12px 16px",
+    border: `1px solid ${colors.borderColor}`,
+    borderRadius: "8px",
+    fontSize: "1rem",
+    fontFamily: "inherit",
+    transition: "all 0.2s ease",
+    backgroundColor: `${colors.background}80`,
+  },
+  tableContainer: {
+    overflowX: "auto",
+    border: `1px solid ${colors.borderColor}`,
+    borderRadius: "12px",
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: "0.95rem",
+  },
+  tableHeader: {
+    backgroundColor: colors.background,
+  },
+  th: {
+    padding: "16px",
+    textAlign: "left",
+    fontWeight: "600",
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+    fontSize: "0.8rem",
+    letterSpacing: "0.5px",
+  },
+  tableRow: {
+    borderBottom: `1px solid ${colors.borderColor}`,
+    transition: "background-color 0.2s ease",
+  },
+  td: {
+    padding: "16px",
+    color: colors.textSecondary,
+    verticalAlign: "middle",
+  },
+  actionButtons: {
+    display: "flex",
+    gap: "8px",
+  },
+  actionBtn: {
+    padding: "8px",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    transition: "all 0.2s ease-in-out",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  viewBtn: {
+    padding: "8px",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    transition: "all 0.2s ease-in-out",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primary,
+  },
+  editBtn: {
+    padding: "8px",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    transition: "all 0.2s ease-in-out",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.edit,
+  },
+  deleteBtn: {
+    padding: "8px",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    transition: "all 0.2s ease-in-out",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.danger,
+  },
+  emptyState: {
+    padding: "60px 20px",
+    textAlign: "center",
+    backgroundColor: colors.background,
+    borderRadius: "12px",
+    border: `1px dashed ${colors.borderColor}`,
+  },
+  emptyStateText: {
+    fontSize: "1.1rem",
+    color: colors.textSecondary,
+    margin: 0,
+  },
+  footer: {
+    backgroundColor: "#FFFFFF",
+    color: colors.textSecondary,
+    textAlign: "center",
+    padding: "20px",
+    marginTop: "auto",
+    borderTop: `1px solid ${colors.borderColor}`,
+  },
+  footerText: {
+    margin: 0,
+    fontSize: "0.9rem",
+  },
+};
+
+// Responsive styles
+const styleSheet = document.createElement("style");
+styleSheet.textContent = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  @media (max-width: 768px) {
+    .nav-right {
+      display: none !important;
+    }
+    
+    .mobile-menu-btn {
+      display: block !important;
+    }
+    
+    .mobile-menu {
+      display: flex !important;
+    }
+
+    .main-content {
+      padding: 20px 15px !important;
+    }
+
+    .page-title {
+      font-size: 1.8rem !important;
+    }
+
+    .form-section, .patient-section {
+      padding: 20px !important;
+    }
+  }
+  
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: ${colors.primary} !important;
+    box-shadow: 0 0 0 3px ${colors.primary}40;
+  }
+
+  tr:last-child {
+    border-bottom: none;
+  }
+
+  tr:hover {
+    background-color: ${colors.background} !important;
+  }
+
+  .close-form-btn:hover {
+    color: ${colors.danger} !important;
+  }
+`;
+document.head.appendChild(styleSheet);
+
+export default Dashboard;

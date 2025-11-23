@@ -1,0 +1,72 @@
+import React, { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import Login from "./pages/login";
+import Dashboard from "./pages/dashboard";
+import "./assets/css/pasien.css";
+
+/**
+ * Komponen utama App
+ * Menangani routing untuk aplikasi pendaftaran pasien
+ *
+ * Routes:
+ * - /login → Halaman Login Admin
+ * - /dashboard → Halaman Dashboard Admin (protected)
+ * - / → Redirect ke /login atau /dashboard
+ */
+function App() {
+  // Status login admin
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Handle login admin
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
+
+  return (
+    <Router>
+      <Routes>
+        {/* Rute Login Admin */}
+        <Route path="/login" element={<Login onLogin={handleLogin} />} />
+
+        {/* Rute Dashboard Admin */}
+        <Route
+          path="/dashboard"
+          element={
+            isLoggedIn ? (
+              <Dashboard onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* Rute Default - Redirect ke Login atau Dashboard */}
+        <Route
+          path="/"
+          element={
+            isLoggedIn ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* Rute 404 - Redirect ke Login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
