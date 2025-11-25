@@ -1,77 +1,67 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
 
 /**
  * Komponen Halaman Login Admin
- * Login dengan username dan password yang sudah fixed
- *
- * Credentials:
- * - Username: admin
- * - Password: admin123
  */
 function Login({ onLogin }) {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");        // changed: email
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Credentials admin yang fixed
-  const ADMIN_USERNAME = "admin";
-  const ADMIN_PASSWORD = "admin123";
-
-  // Handle submit form login
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validasi input
-    if (!username.trim() || !password.trim()) {
-      setError("Username dan password tidak boleh kosong");
+    if (!email.trim() || !password.trim()) {
+      setError("Email dan password tidak boleh kosong");
       setSuccess("");
       return;
     }
-
-    // Validasi kredensial admin
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
       setSuccess("✓ Login berhasil! Mengalihkan ke dashboard...");
       setError("");
       setTimeout(() => {
-        onLogin();
+        onLogin?.();
         navigate("/dashboard");
-      }, 1500);
-    } else {
-      setError("❌ Username atau password salah");
-      setSuccess("");
+      }, 1200);
+    } catch (err) {
+      const code = err?.code || "";
+      if (code === "auth/user-not-found") setError("Akun tidak ditemukan. Daftar terlebih dahulu.");
+      else if (code === "auth/wrong-password") setError("Password salah.");
+      else if (code === "auth/invalid-email") setError("Format email tidak valid.");
+      else setError("Gagal login. Cek kredensial atau koneksi.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1>🏥 Login Admin </h1>
-        <p>Masukkan kredensial admin untuk mengakses dashboard</p>
+        <h1>🏥 Login Admin</h1>
+        <p>Masukkan email dan password untuk mengakses dashboard</p>
 
         <form onSubmit={handleSubmit} className="login-form">
-          {/* Username Input */}
           <div className="form-group">
-            <label htmlFor="username">👤 Username</label>
+            <label htmlFor="email">📧 Email</label>
             <input
-              id="username"
-              type="text"
-              placeholder="Masukkan username"
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                if (error) setError("");
-                if (success) setSuccess("");
-              }}
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError(""); setSuccess(""); }}
               className="form-input"
               autoFocus
-              disabled={success ? true : false}
+              disabled={loading}
             />
           </div>
 
-          {/* Password Input */}
           <div className="form-group">
             <label htmlFor="password">🔐 Password</label>
             <input
@@ -79,13 +69,9 @@ function Login({ onLogin }) {
               type="password"
               placeholder="Masukkan password"
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (error) setError("");
-                if (success) setSuccess("");
-              }}
+              onChange={(e) => { setPassword(e.target.value); setError(""); setSuccess(""); }}
               className="form-input"
-              disabled={success ? true : false}
+              disabled={loading}
             />
           </div>
 
@@ -102,15 +88,4 @@ function Login({ onLogin }) {
             disabled={success ? true : false}
             style={{
               opacity: success ? 0.8 : 1,
-              cursor: success ? "not-allowed" : "pointer",
-            }}
-          >
-            {success ? "⏳ Sedang login..." : "✓ Masuk"}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-export default Login;
+              cursor: success ? "not-allowed" : "pointer",            }}          >            {success ? "⏳ Sedang login..." : "✓ Masuk"}          </button>        </form>      </div>    </div>  );}export default Login;
