@@ -1,14 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 
-/**
- * Komponen Halaman Login Admin
- */
-function Login({ onLogin }) {
+function Register2() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState(""); // changed: email
+  const [nama, setNama] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -16,28 +14,30 @@ function Login({ onLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
-      setError("Email dan password tidak boleh kosong");
+    if (!nama.trim() || !email.trim() || !password.trim()) {
+      setError("Nama, email, dan password tidak boleh kosong");
       setSuccess("");
       return;
     }
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      setSuccess("✓ Login berhasil! Mengalihkan ke dashboard...");
+      await createUserWithEmailAndPassword(auth, email, password);
+      setSuccess("✓ Pendaftaran berhasil! Silakan login.");
       setError("");
       setTimeout(() => {
-        onLogin?.();
-        navigate("/dashboard");
-      }, 1200);
+        navigate("/login");
+      }, 2000);
     } catch (err) {
       const code = err?.code || "";
-      if (code === "auth/user-not-found")
-        setError("Akun tidak ditemukan. Daftar terlebih dahulu.");
-      else if (code === "auth/wrong-password") setError("Password salah.");
-      else if (code === "auth/invalid-email")
+      if (code === "auth/email-already-in-use") {
+        setError("Email sudah terdaftar. Silakan gunakan email lain.");
+      } else if (code === "auth/invalid-email") {
         setError("Format email tidak valid.");
-      else setError("Gagal login. Cek kredensial atau koneksi.");
+      } else if (code === "auth/weak-password") {
+        setError("Password terlalu lemah. Minimal 6 karakter.");
+      } else {
+        setError("Gagal mendaftar. Silakan coba lagi.");
+      }
     } finally {
       setLoading(false);
     }
@@ -46,10 +46,28 @@ function Login({ onLogin }) {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1>🏥 Login Elang DevOps</h1>
-        <p>Masukkan email dan password untuk mengakses dashboard</p>
+        <h1>Buat Akun Baru</h1>
+        <p>Daftarkan akun Anda untuk melanjutkan</p>
 
         <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label htmlFor="nama">Nama</label>
+            <input
+              id="nama"
+              type="text"
+              placeholder="Masukkan nama Anda"
+              value={nama}
+              onChange={(e) => {
+                setNama(e.target.value);
+                setError("");
+                setSuccess("");
+              }}
+              className="form-input"
+              autoFocus
+              disabled={loading}
+            />
+          </div>
+
           <div className="form-group">
             <label htmlFor="email">📧 Email</label>
             <input
@@ -63,10 +81,10 @@ function Login({ onLogin }) {
                 setSuccess("");
               }}
               className="form-input"
-              autoFocus
               disabled={loading}
             />
           </div>
+
           <div className="form-group">
             <label htmlFor="password">🔐 Password</label>
             <input
@@ -83,29 +101,23 @@ function Login({ onLogin }) {
               disabled={loading}
             />
           </div>
-          {/* Error Message */}
+
           {error && <p className="error-message">{error}</p>}
-          {/* Success Message */}
           {success && <p className="success-message">{success}</p>}
-          {/* Submit Button */}
+
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={success ? true : false}
-            style={{
-              opacity: success ? 0.8 : 1,
-              cursor: success ? "not-allowed" : "pointer",
-            }}
+            disabled={loading || success}
           >
-            {" "}
-            {success ? "⏳ Sedang login..." : "✓ Masuk"}{" "}
-          </button>{" "}
+            {loading ? "Mendaftar..." : "Daftar"}
+          </button>
         </form>
         <div className="register-footer">
           <p>
-            Belum punya akun?{" "}
-            <Link to="/register2" className="link">
-              Daftar di sini
+            Sudah punya akun?{" "}
+            <Link to="/login" className="link">
+              Masuk di sini
             </Link>
           </p>
         </div>
@@ -113,4 +125,5 @@ function Login({ onLogin }) {
     </div>
   );
 }
-export default Login;
+
+export default Register2;

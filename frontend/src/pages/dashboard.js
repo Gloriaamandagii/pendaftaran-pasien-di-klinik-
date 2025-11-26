@@ -20,6 +20,14 @@ import {
   Eye,
   Edit,
 } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 /**
  * Komponen Halaman Dashboard Admin Klinik
@@ -39,38 +47,7 @@ function Dashboard({ onLogout }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  const [patients, setPatients] = useState([
-    {
-      id: 1,
-      namaLengkap: "John Dohn",
-      nik: "1234567890123456",
-      alamat: "Jl. Merdeka No. 123, Jakarta",
-      tanggalLahir: "1990-05-15",
-      nomorHp: "081234567890",
-      keluhan: "Sakit kepala dan pusing",
-      tglDaftar: "2025-11-19",
-    },
-    {
-      id: 2,
-      namaLengkap: "Peter Parker",
-      nik: "9876543210987654",
-      alamat: "Jl. Ahmad Yani No. 45, Bandung",
-      tanggalLahir: "1992-08-20",
-      nomorHp: "082345678901",
-      keluhan: "Demam tinggi dan batuk",
-      tglDaftar: "2025-11-18",
-    },
-    {
-      id: 3,
-      namaLengkap: "anna Smith",
-      nik: "5555555555555555",
-      alamat: "Jl. Sudirman No. 789, Surabaya",
-      tanggalLahir: "1988-03-10",
-      nomorHp: "085678901234",
-      keluhan: "Sakit perut akut",
-      tglDaftar: "2025-11-17",
-    },
-  ]);
+  const [patients, setPatients] = useState([]);
 
   const [formData, setFormData] = useState({
     namaLengkap: "",
@@ -207,9 +184,53 @@ function Dashboard({ onLogout }) {
       patient.nomorHp.includes(searchTerm)
   );
 
+  const today = new Date();
   const todayPatients = patients.filter(
-    (p) => p.tglDaftar === new Date().toISOString().split("T")[0]
+    (p) => p.tglDaftar === today.toISOString().split("T")[0]
   ).length;
+
+  const weekPatients = patients.filter((p) => {
+    const patientDate = new Date(p.tglDaftar);
+    const diffTime = Math.abs(today - patientDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 7;
+  }).length;
+
+  const monthPatients = patients.filter((p) => {
+    const patientDate = new Date(p.tglDaftar);
+    return (
+      patientDate.getMonth() === today.getMonth() &&
+      patientDate.getFullYear() === today.getFullYear()
+    );
+  }).length;
+
+  const avgAge =
+    patients.length > 0
+      ? (
+          patients.reduce((acc, p) => {
+            const birthDate = new Date(p.tanggalLahir);
+            const age = today.getFullYear() - birthDate.getFullYear();
+            return acc + age;
+          }, 0) / patients.length
+        ).toFixed(1)
+      : 0;
+
+  const getPieChartData = () => {
+    const data = patients.reduce((acc, patient) => {
+      const keluhan = patient.keluhan;
+      const existing = acc.find((item) => item.name === keluhan);
+      if (existing) {
+        existing.value++;
+      } else {
+        acc.push({ name: keluhan, value: 1 });
+      }
+      return acc;
+    }, []);
+    return data;
+  };
+
+  const pieChartData = getPieChartData();
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AF19FF"];
 
   return (
     <div style={styles.container}>
@@ -288,24 +309,74 @@ function Dashboard({ onLogout }) {
       <div style={styles.mainContent}>
         {/* Statistik Section */}
         <section style={styles.statsSection}>
-          <h1 style={styles.pageTitle}>Dashboard</h1>
+          <h1 style={styles.pageTitle}>Statistik Pendaftaran Pasien</h1>
 
           <div style={styles.statsGrid}>
             <div style={styles.statCard}>
               <div style={styles.statIcon}>👥</div>
               <div style={styles.statInfo}>
                 <div style={styles.statNumber}>{patients.length}</div>
-                <div style={styles.statLabel}>Total Pasien Terdaftar</div>
+                <div style={styles.statLabel}>Total Pasien</div>
               </div>
             </div>
             <div style={styles.statCard}>
               <div style={styles.statIcon}>📅</div>
               <div style={styles.statInfo}>
                 <div style={styles.statNumber}>{todayPatients}</div>
-                <div style={styles.statLabel}>Pendaftar Hari Ini</div>
+                <div style={styles.statLabel}>Pasien Hari Ini</div>
+              </div>
+            </div>
+            <div style={styles.statCard}>
+              <div style={styles.statIcon}>🗓️</div>
+              <div style={styles.statInfo}>
+                <div style={styles.statNumber}>{weekPatients}</div>
+                <div style={styles.statLabel}>Pasien Minggu Ini</div>
+              </div>
+            </div>
+            <div style={styles.statCard}>
+              <div style={styles.statIcon}>📈</div>
+              <div style={styles.statInfo}>
+                <div style={styles.statNumber}>{monthPatients}</div>
+                <div style={styles.statLabel}>Pasien Bulan Ini</div>
+              </div>
+            </div>
+            <div style={styles.statCard}>
+              <div style={styles.statIcon}>🎂</div>
+              <div style={styles.statInfo}>
+                <div style={styles.statNumber}>{avgAge}</div>
+                <div style={styles.statLabel}>Rata-rata Usia Pasien</div>
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Chart Section */}
+        <section style={styles.chartSection}>
+          <h2 style={styles.sectionTitle}>Distribusi Keluhan Pasien</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={pieChartData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+                nameKey="name"
+                label={(entry) => `${entry.name} (${entry.value})`}
+              >
+                {pieChartData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
         </section>
 
         {/* Form Pendaftaran Pasien Baru */}
@@ -691,6 +762,14 @@ const styles = {
     fontSize: "0.9rem",
     color: colors.textSecondary,
     marginTop: "5px",
+  },
+  chartSection: {
+    backgroundColor: colors.surface,
+    padding: "40px",
+    borderRadius: "16px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+    marginBottom: "40px",
+    border: `1px solid ${colors.borderColor}`,
   },
   formSection: {
     backgroundColor: colors.surface,

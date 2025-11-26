@@ -6,6 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import Login from "./pages/login";
+import Register2 from "./pages/register2";
 import Dashboard from "./pages/dashboard";
 import "./assets/css/pasien.css";
 
@@ -37,6 +38,9 @@ function App() {
       <Routes>
         {/* Rute Login Admin */}
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
+
+        {/* Rute Register Akun */}
+        <Route path="/register2" element={<Register2 />} />
 
         {/* Rute Dashboard Admin */}
         <Route
