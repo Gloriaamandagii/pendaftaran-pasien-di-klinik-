@@ -1,103 +1,101 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
+
 
 function Register2() {
   const navigate = useNavigate();
-  const [nama, setNama] = useState("");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [nama, setNama] = useState(""); 
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    if (!nama.trim() || !email.trim() || !password.trim()) {
-      setError("Nama, email, dan password tidak boleh kosong");
+
+    if (!email.trim() || !password.trim() || !nama.trim()) {
+      setError("Semua field wajib diisi.");
       setSuccess("");
       return;
     }
+
     setLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      setSuccess("✓ Pendaftaran berhasil! Silakan login.");
+      // 1️⃣ Buat akun di Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      // 2️⃣ Simpan data tambahan ke Firestore
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        uid: userCredential.user.uid,
+        nama,
+        email,
+        createdAt: new Date(),
+      });
+
+      setSuccess("Akun berhasil dibuat!");
       setError("");
+
       setTimeout(() => {
         navigate("/login");
-      }, 2000);
+      }, 1200);
+
     } catch (err) {
-      const code = err?.code || "";
-      if (code === "auth/email-already-in-use") {
-        setError("Email sudah terdaftar. Silakan gunakan email lain.");
-      } else if (code === "auth/invalid-email") {
+      const code = err.code;
+
+      if (code === "auth/email-already-in-use")
+        setError("Email sudah terdaftar.");
+      else if (code === "auth/invalid-email")
         setError("Format email tidak valid.");
-      } else if (code === "auth/weak-password") {
-        setError("Password terlalu lemah. Minimal 6 karakter.");
-      } else {
-        setError("Gagal mendaftar. Silakan coba lagi.");
-      }
+      else if (code === "auth/weak-password")
+        setError("Password minimal 6 karakter.");
+      else setError("Gagal mendaftar.");
+
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h1>Buat Akun Baru</h1>
-        <p>Daftarkan akun Anda untuk melanjutkan</p>
+    <div className="register-container">
+      <div className="register-card">
+        <h1>Daftar Akun Baru</h1>
 
-        <form onSubmit={handleSubmit} className="login-form">
+        <form onSubmit={handleRegister}>
           <div className="form-group">
-            <label htmlFor="nama">Nama</label>
-            <input
-              id="nama"
+            <label>Nama Lengkap</label>
+            <input 
               type="text"
-              placeholder="Masukkan nama Anda"
               value={nama}
-              onChange={(e) => {
-                setNama(e.target.value);
-                setError("");
-                setSuccess("");
-              }}
-              className="form-input"
-              autoFocus
+              onChange={(e) => setNama(e.target.value)}
               disabled={loading}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">📧 Email</label>
-            <input
-              id="email"
+            <label>Email</label>
+            <input 
               type="email"
-              placeholder="you@example.com"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setError("");
-                setSuccess("");
-              }}
-              className="form-input"
+              onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">🔐 Password</label>
-            <input
-              id="password"
+            <label>Password</label>
+            <input 
               type="password"
-              placeholder="Masukkan password"
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError("");
-                setSuccess("");
-              }}
-              className="form-input"
+              onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
             />
           </div>
@@ -105,22 +103,14 @@ function Register2() {
           {error && <p className="error-message">{error}</p>}
           {success && <p className="success-message">{success}</p>}
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={loading || success}
-          >
-            {loading ? "Mendaftar..." : "Daftar"}
+          <button type="submit" disabled={loading}>
+            {loading ? "Mendaftarkan..." : "Daftar"}
           </button>
         </form>
-        <div className="register-footer">
-          <p>
-            Sudah punya akun?{" "}
-            <Link to="/login" className="link">
-              Masuk di sini
-            </Link>
-          </p>
-        </div>
+
+        <p>
+          Sudah punya akun? <Link to="/login">Login</Link>
+        </p>
       </div>
     </div>
   );

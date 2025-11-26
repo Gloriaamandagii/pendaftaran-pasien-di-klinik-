@@ -1,40 +1,19 @@
-/**
- * Konfigurasi Firebase
- * File ini dapat digunakan untuk integrasi dengan Firebase
- *
- * Untuk menggunakan Firebase:
- * 1. Install firebase: npm install firebase
- * 2. Buat project di https://console.firebase.google.com
- * 3. Salin konfigurasi dari Firebase Console
- * 4. Replace firebaseConfig dengan data asli Anda
- */
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
-// Konfigurasi Firebase (Dummy - ganti dengan data asli Anda)
 const firebaseConfig = {
-  apiKey: "AIzaSyDummyKeyHereReplaceWithYourKey",
-  authDomain: "your-app.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-app.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abc123def456",
+  apiKey: "AIzaSyD8L14t4xwlY_EBZK3SPNaSwYsj-dEUiu8",
+  authDomain: "pendaftaran-pasien-klinik.firebaseapp.com",
+  projectId: "pendaftaran-pasien-klinik",
+  storageBucket: "pendaftaran-pasien-klinik.firebasestorage.app",
+  messagingSenderId: "665500523934",
+  appId: "1:665500523934:web:f745704592b0faab248a8f",
+  measurementId: "G-Y7WJYNT7LW"
 };
 
-// Import Firebase (Uncomment ketika sudah install)
-// import { initializeApp } from "firebase/app";
-// import { getAuth } from "firebase/auth";
-// import { getFirestore } from "firebase/firestore";
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-// Initialize Firebase
-// const app = initializeApp(firebaseConfig);
-// const auth = getAuth(app);
-// const db = getFirestore(app);
-
-// Export services (Uncomment ketika sudah install)
-// export { auth, db };
-
-// Untuk saat ini, export object kosong sebagai placeholder
-export const firebase = {
-  config: firebaseConfig,
-  message:
-    "Firebase belum dikonfigurasi. Uncomment kode di atas untuk mengaktifkan.",
-};
+export { app, auth, db };
