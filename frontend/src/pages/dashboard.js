@@ -60,7 +60,8 @@ function Dashboard({ user, onLogout }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [selectedPatientForHistory, setSelectedPatientForHistory] = useState(null);
+  const [selectedPatientForHistory, setSelectedPatientForHistory] =
+    useState(null);
 
   // Data state
   const [patients, setPatients] = useState([]);
@@ -585,7 +586,8 @@ function Dashboard({ user, onLogout }) {
 
     return () => {
       // cleanup on unmount
-      if (styleSheet && styleSheet.parentNode) styleSheet.parentNode.removeChild(styleSheet);
+      if (styleSheet && styleSheet.parentNode)
+        styleSheet.parentNode.removeChild(styleSheet);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run once
@@ -732,8 +734,8 @@ function Dashboard({ user, onLogout }) {
   // Guard filter for empty string fields to avoid runtime errors
   const filteredPatients = patients.filter((patient) => {
     const name = (patient.namaLengkap || "").toLowerCase();
-    const nik = (patient.nik || "");
-    const hp = (patient.nomorHp || "");
+    const nik = patient.nik || "";
+    const hp = patient.nomorHp || "";
     const term = searchTerm.toLowerCase();
     return (
       name.includes(term) || nik.includes(searchTerm) || hp.includes(searchTerm)
@@ -763,12 +765,12 @@ function Dashboard({ user, onLogout }) {
   const avgAge =
     patients.length > 0
       ? (
-        patients.reduce((acc, p) => {
-          const birthDate = new Date(p.tanggalLahir);
-          const age = today.getFullYear() - birthDate.getFullYear();
-          return acc + age;
-        }, 0) / patients.length
-      ).toFixed(1)
+          patients.reduce((acc, p) => {
+            const birthDate = new Date(p.tanggalLahir);
+            const age = today.getFullYear() - birthDate.getFullYear();
+            return acc + age;
+          }, 0) / patients.length
+        ).toFixed(1)
       : 0;
 
   const getPieChartData = () => {
@@ -871,7 +873,7 @@ function Dashboard({ user, onLogout }) {
         {/* Statistik Section */}
         <section style={styles.statsSection}>
           <h1 style={styles.pageTitle} className="page-title">
-            Statistik Pendaftaran
+            Statistik Pendaftaran Pasien
           </h1>
 
           <div style={styles.statsGrid}>
@@ -1039,7 +1041,8 @@ function Dashboard({ user, onLogout }) {
                   type="submit"
                   style={styles.submitBtn}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = styles.colors.primaryDark)
+                    (e.currentTarget.style.background =
+                      styles.colors.primaryDark)
                   }
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.background = styles.colors.primary)
@@ -1060,7 +1063,8 @@ function Dashboard({ user, onLogout }) {
                   style={styles.cancelBtn}
                   onClick={handleCancelForm}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = styles.colors.borderColor)
+                    (e.currentTarget.style.background =
+                      styles.colors.borderColor)
                   }
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.background = "transparent")
@@ -1114,7 +1118,12 @@ function Dashboard({ user, onLogout }) {
                     <tr key={patient.id} style={styles.tableRow}>
                       <td style={styles.td}>{index + 1}</td>
                       <td style={styles.td}>
-                        <div style={{ fontWeight: "600", color: colors.textPrimary }}>
+                        <div
+                          style={{
+                            fontWeight: "600",
+                            color: colors.textPrimary,
+                          }}
+                        >
                           {patient.namaLengkap}
                         </div>
                         <div style={{ fontSize: "0.85rem", marginTop: "4px" }}>
@@ -1138,8 +1147,8 @@ function Dashboard({ user, onLogout }) {
                                 (patient.status || "Waiting") === "Waiting"
                                   ? colors.statusWaiting
                                   : (patient.status || "Waiting") === "Checking"
-                                    ? colors.statusChecking
-                                    : colors.statusFinished,
+                                  ? colors.statusChecking
+                                  : colors.statusFinished,
                             }}
                           >
                             <option value="Waiting" style={{ color: "black" }}>
@@ -1164,8 +1173,8 @@ function Dashboard({ user, onLogout }) {
                                 (patient.status || "Waiting") === "Waiting"
                                   ? colors.statusWaiting
                                   : (patient.status || "Waiting") === "Checking"
-                                    ? colors.statusChecking
-                                    : colors.statusFinished,
+                                  ? colors.statusChecking
+                                  : colors.statusFinished,
                             }}
                           >
                             {patient.status || "Waiting"}
@@ -1176,15 +1185,17 @@ function Dashboard({ user, onLogout }) {
                         <div style={styles.actionButtons}>
                           <button
                             style={styles.historyBtn}
-                            onClick={() => setSelectedPatientForHistory(patient)}
+                            onClick={() =>
+                              setSelectedPatientForHistory(patient)
+                            }
                             title="Rekam Medis"
                             onMouseEnter={(e) =>
-                            (e.currentTarget.style.background =
-                              styles.colors.infoDark)
+                              (e.currentTarget.style.background =
+                                styles.colors.infoDark)
                             }
                             onMouseLeave={(e) =>
-                            (e.currentTarget.style.background =
-                              styles.colors.info)
+                              (e.currentTarget.style.background =
+                                styles.colors.info)
                             }
                           >
                             <FileText size={16} />
@@ -1194,12 +1205,12 @@ function Dashboard({ user, onLogout }) {
                             onClick={() => handleEditClick(patient)}
                             title="Edit Data"
                             onMouseEnter={(e) =>
-                            (e.currentTarget.style.background =
-                              styles.colors.editDark)
+                              (e.currentTarget.style.background =
+                                styles.colors.editDark)
                             }
                             onMouseLeave={(e) =>
-                            (e.currentTarget.style.background =
-                              styles.colors.edit)
+                              (e.currentTarget.style.background =
+                                styles.colors.edit)
                             }
                           >
                             <Edit size={16} />
@@ -1209,12 +1220,12 @@ function Dashboard({ user, onLogout }) {
                             onClick={() => handleDeletePatient(patient.id)}
                             title="Hapus"
                             onMouseEnter={(e) =>
-                            (e.currentTarget.style.background =
-                              styles.colors.dangerDark)
+                              (e.currentTarget.style.background =
+                                styles.colors.dangerDark)
                             }
                             onMouseLeave={(e) =>
-                            (e.currentTarget.style.background =
-                              styles.colors.danger)
+                              (e.currentTarget.style.background =
+                                styles.colors.danger)
                             }
                           >
                             <Trash2 size={16} />
