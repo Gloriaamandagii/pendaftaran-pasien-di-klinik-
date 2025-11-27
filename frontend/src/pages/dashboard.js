@@ -873,7 +873,7 @@ function Dashboard({ user, onLogout }) {
         {/* Statistik Section */}
         <section style={styles.statsSection}>
           <h1 style={styles.pageTitle} className="page-title">
-            Statistik Pendaftaran
+            Statistik Pendaftaran pasien
           </h1>
 
           <div style={styles.statsGrid}>
