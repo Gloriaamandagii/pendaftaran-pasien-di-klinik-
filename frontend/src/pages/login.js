@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../config/firebase";
- // pastikan sudah benar path-nya
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
+// pastikan sudah benar path-nya
 
 /**
  * Halaman Login Admin
@@ -32,13 +33,18 @@ function Login({ onLogin }) {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Ambil data user dari Firestore untuk cek role
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const userData = userDoc.exists() ? userDoc.data() : { role: "staff" };
 
       setSuccess("✓ Login berhasil! Mengalihkan ke dashboard...");
       setError("");
 
       setTimeout(() => {
-        onLogin?.();
+        onLogin?.(userData);
         navigate("/dashboard");
       }, 1200);
     } catch (err) {
