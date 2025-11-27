@@ -21,16 +21,16 @@ import "./assets/css/pasien.css";
  */
 function App() {
   // Status login admin
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
 
   // Handle login admin
-  const handleLogin = () => {
-    setIsLoggedIn(true);
+  const handleLogin = (userData) => {
+    setUser(userData);
   };
 
   // Handle logout
   const handleLogout = () => {
-    setIsLoggedIn(false);
+    setUser(null);
   };
 
   return (
@@ -46,8 +46,8 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            isLoggedIn ? (
-              <Dashboard onLogout={handleLogout} />
+            user ? (
+              <Dashboard user={user} onLogout={handleLogout} />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -58,7 +58,7 @@ function App() {
         <Route
           path="/"
           element={
-            isLoggedIn ? (
+            user ? (
               <Navigate to="/dashboard" replace />
             ) : (
               <Navigate to="/login" replace />

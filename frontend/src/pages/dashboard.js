@@ -30,6 +30,18 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+import { db } from "../config/firebase";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+
+import MedicalRecordModal from "../components/MedicalRecordModal";
+
 /**
  * Komponen Halaman Dashboard Admin Klinik
  * Dashboard untuk mengelola pendaftaran pasien
@@ -40,7 +52,7 @@ import {
  * - Tidak mengubah alur/logika Anda sama sekali
  */
 
-function Dashboard({ onLogout }) {
+function Dashboard({ user, onLogout }) {
   const navigate = useNavigate();
 
   // UI state
@@ -48,9 +60,25 @@ function Dashboard({ onLogout }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [selectedPatientForHistory, setSelectedPatientForHistory] = useState(null);
 
-  // Data state (tetap lokal sesuai alur Anda)
+  // Data state
   const [patients, setPatients] = useState([]);
+  const patientsCollectionRef = collection(db, "patients");
+
+  // Fetch data from Firestore
+  const getPatients = async () => {
+    try {
+      const data = await getDocs(patientsCollectionRef);
+      setPatients(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
+    } catch (error) {
+      console.error("Error fetching patients:", error);
+    }
+  };
+
+  useEffect(() => {
+    getPatients();
+  }, []);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -70,11 +98,16 @@ function Dashboard({ onLogout }) {
     dangerDark: "rgb(220 38 38)",
     edit: "rgb(245 158 11)",
     editDark: "rgb(217 119 6)",
+    info: "rgb(99 102 241)", // Indigo
+    infoDark: "rgb(79 70 229)",
     background: "rgb(243 244 246)",
     surface: "#FFFFFF",
     textPrimary: "rgb(17 24 39)",
     textSecondary: "rgb(107 114 128)",
     borderColor: "rgb(229 231 235)",
+    statusWaiting: "rgb(234 179 8)", // Yellow
+    statusChecking: "rgb(59 130 246)", // Blue
+    statusFinished: "rgb(34 197 94)", // Green
   };
 
   const styles = {
@@ -416,6 +449,18 @@ function Dashboard({ onLogout }) {
       justifyContent: "center",
       backgroundColor: colors.primary,
     },
+    historyBtn: {
+      padding: "8px",
+      color: "white",
+      border: "none",
+      borderRadius: "6px",
+      cursor: "pointer",
+      transition: "all 0.2s ease-in-out",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.info,
+    },
     editBtn: {
       padding: "8px",
       color: "white",
@@ -516,6 +561,25 @@ function Dashboard({ onLogout }) {
       .close-form-btn:hover {
         color: ${colors.danger} !important;
       }
+
+      .status-select {
+        padding: 6px 12px;
+        border-radius: 20px;
+        border: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        color: white;
+        appearance: none;
+        -webkit-appearance: none;
+        text-align: center;
+        transition: all 0.2s ease;
+      }
+
+      .status-select:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+      }
     `;
     document.head.appendChild(styleSheet);
 
@@ -580,7 +644,7 @@ function Dashboard({ onLogout }) {
     }
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
 
     const error = validateForm();
@@ -589,38 +653,55 @@ function Dashboard({ onLogout }) {
       return;
     }
 
-    if (editingId) {
-      setPatients(
-        patients.map((p) =>
-          p.id === editingId
-            ? {
-                ...p,
-                ...formData,
-              }
-            : p
-        )
-      );
-      alert("✅ Data pasien berhasil diupdate!");
-    } else {
-      const newPatient = {
-        id:
-          patients.length > 0 ? Math.max(...patients.map((p) => p.id)) + 1 : 1,
-        ...formData,
-        tglDaftar: new Date().toISOString().split("T")[0],
-      };
-      setPatients([newPatient, ...patients]);
-      alert("✅ Pasien berhasil ditambahkan!");
+    try {
+      if (editingId) {
+        const patientDoc = doc(db, "patients", editingId);
+        await updateDoc(patientDoc, formData);
+        alert("✅ Data pasien berhasil diupdate!");
+      } else {
+        await addDoc(patientsCollectionRef, {
+          ...formData,
+          status: "Waiting", // Default status
+          tglDaftar: new Date().toISOString().split("T")[0],
+        });
+        alert("✅ Pasien berhasil ditambahkan!");
+      }
+      getPatients(); // Refresh data
+      handleCancelForm();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      alert("❌ Terjadi kesalahan saat menyimpan data: " + error.message);
     }
-    handleCancelForm();
   };
 
   // -----------------------
-  // Actions: edit / delete / logout
+  // Actions: edit / delete / logout / status
   // -----------------------
-  const handleDeletePatient = (id) => {
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      const patientDoc = doc(db, "patients", id);
+      await updateDoc(patientDoc, { status: newStatus });
+      // Optimistic update or refresh
+      setPatients((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: newStatus } : p))
+      );
+    } catch (error) {
+      console.error("Error updating status:", error);
+      alert("❌ Gagal mengubah status: " + error.message);
+    }
+  };
+
+  const handleDeletePatient = async (id) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus data pasien ini?")) {
-      setPatients(patients.filter((p) => p.id !== id));
-      alert("✅ Data pasien berhasil dihapus!");
+      try {
+        const patientDoc = doc(db, "patients", id);
+        await deleteDoc(patientDoc);
+        getPatients(); // Refresh data
+        alert("✅ Data pasien berhasil dihapus!");
+      } catch (error) {
+        console.error("Error deleting patient:", error);
+        alert("❌ Terjadi kesalahan saat menghapus data.");
+      }
     }
   };
 
@@ -682,12 +763,12 @@ function Dashboard({ onLogout }) {
   const avgAge =
     patients.length > 0
       ? (
-          patients.reduce((acc, p) => {
-            const birthDate = new Date(p.tanggalLahir);
-            const age = today.getFullYear() - birthDate.getFullYear();
-            return acc + age;
-          }, 0) / patients.length
-        ).toFixed(1)
+        patients.reduce((acc, p) => {
+          const birthDate = new Date(p.tanggalLahir);
+          const age = today.getFullYear() - birthDate.getFullYear();
+          return acc + age;
+        }, 0) / patients.length
+      ).toFixed(1)
       : 0;
 
   const getPieChartData = () => {
@@ -1024,6 +1105,7 @@ function Dashboard({ onLogout }) {
                     <th style={styles.th}>Nomor HP</th>
                     <th style={styles.th}>Keluhan</th>
                     <th style={styles.th}>Tgl Daftar</th>
+                    <th style={styles.th}>Status</th>
                     <th style={styles.th}>Aksi</th>
                   </tr>
                 </thead>
@@ -1032,25 +1114,92 @@ function Dashboard({ onLogout }) {
                     <tr key={patient.id} style={styles.tableRow}>
                       <td style={styles.td}>{index + 1}</td>
                       <td style={styles.td}>
-                        <strong>{patient.namaLengkap}</strong>
+                        <div style={{ fontWeight: "600", color: colors.textPrimary }}>
+                          {patient.namaLengkap}
+                        </div>
+                        <div style={{ fontSize: "0.85rem", marginTop: "4px" }}>
+                          NIK: {patient.nik}
+                        </div>
                       </td>
                       <td style={styles.td}>{patient.nik}</td>
                       <td style={styles.td}>{patient.nomorHp}</td>
                       <td style={styles.td}>{patient.keluhan}</td>
                       <td style={styles.td}>{patient.tglDaftar}</td>
                       <td style={styles.td}>
+                        {user?.role === "admin" ? (
+                          <select
+                            className="status-select"
+                            value={patient.status || "Waiting"}
+                            onChange={(e) =>
+                              handleStatusChange(patient.id, e.target.value)
+                            }
+                            style={{
+                              backgroundColor:
+                                (patient.status || "Waiting") === "Waiting"
+                                  ? colors.statusWaiting
+                                  : (patient.status || "Waiting") === "Checking"
+                                    ? colors.statusChecking
+                                    : colors.statusFinished,
+                            }}
+                          >
+                            <option value="Waiting" style={{ color: "black" }}>
+                              Waiting
+                            </option>
+                            <option value="Checking" style={{ color: "black" }}>
+                              Checking
+                            </option>
+                            <option value="Finished" style={{ color: "black" }}>
+                              Finished
+                            </option>
+                          </select>
+                        ) : (
+                          <span
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "20px",
+                              fontSize: "0.85rem",
+                              fontWeight: "600",
+                              color: "white",
+                              backgroundColor:
+                                (patient.status || "Waiting") === "Waiting"
+                                  ? colors.statusWaiting
+                                  : (patient.status || "Waiting") === "Checking"
+                                    ? colors.statusChecking
+                                    : colors.statusFinished,
+                            }}
+                          >
+                            {patient.status || "Waiting"}
+                          </span>
+                        )}
+                      </td>
+                      <td style={styles.td}>
                         <div style={styles.actionButtons}>
+                          <button
+                            style={styles.historyBtn}
+                            onClick={() => setSelectedPatientForHistory(patient)}
+                            title="Rekam Medis"
+                            onMouseEnter={(e) =>
+                            (e.currentTarget.style.background =
+                              styles.colors.infoDark)
+                            }
+                            onMouseLeave={(e) =>
+                            (e.currentTarget.style.background =
+                              styles.colors.info)
+                            }
+                          >
+                            <FileText size={16} />
+                          </button>
                           <button
                             style={styles.editBtn}
                             onClick={() => handleEditClick(patient)}
                             title="Edit Data"
                             onMouseEnter={(e) =>
-                              (e.currentTarget.style.background =
-                                styles.colors.editDark)
+                            (e.currentTarget.style.background =
+                              styles.colors.editDark)
                             }
                             onMouseLeave={(e) =>
-                              (e.currentTarget.style.background =
-                                styles.colors.edit)
+                            (e.currentTarget.style.background =
+                              styles.colors.edit)
                             }
                           >
                             <Edit size={16} />
@@ -1060,12 +1209,12 @@ function Dashboard({ onLogout }) {
                             onClick={() => handleDeletePatient(patient.id)}
                             title="Hapus"
                             onMouseEnter={(e) =>
-                              (e.currentTarget.style.background =
-                                styles.colors.dangerDark)
+                            (e.currentTarget.style.background =
+                              styles.colors.dangerDark)
                             }
                             onMouseLeave={(e) =>
-                              (e.currentTarget.style.background =
-                                styles.colors.danger)
+                            (e.currentTarget.style.background =
+                              styles.colors.danger)
                             }
                           >
                             <Trash2 size={16} />
@@ -1096,6 +1245,14 @@ function Dashboard({ onLogout }) {
           Dilindungi
         </p>
       </footer>
+
+      {/* Medical Record Modal */}
+      {selectedPatientForHistory && (
+        <MedicalRecordModal
+          patient={selectedPatientForHistory}
+          onClose={() => setSelectedPatientForHistory(null)}
+        />
+      )}
     </div>
   );
 }

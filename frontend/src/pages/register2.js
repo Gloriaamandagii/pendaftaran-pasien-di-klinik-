@@ -10,7 +10,7 @@ function Register2() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [nama, setNama] = useState(""); 
+  const [nama, setNama] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -38,6 +38,7 @@ function Register2() {
         uid: userCredential.user.uid,
         nama,
         email,
+        role: "staff",
         createdAt: new Date(),
       });
 
@@ -72,7 +73,7 @@ function Register2() {
         <form onSubmit={handleRegister}>
           <div className="form-group">
             <label>Nama Lengkap</label>
-            <input 
+            <input
               type="text"
               value={nama}
               onChange={(e) => setNama(e.target.value)}
@@ -82,7 +83,7 @@ function Register2() {
 
           <div className="form-group">
             <label>Email</label>
-            <input 
+            <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -92,7 +93,7 @@ function Register2() {
 
           <div className="form-group">
             <label>Password</label>
-            <input 
+            <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
