@@ -67,7 +67,7 @@ function Login({ onLogin }) {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1>🏥 Login Elang</h1>
+        <h1>🏥 Login Admin</h1>
         <p>Masukkan email dan password untuk mengakses dashboard</p>
 
         <form onSubmit={handleSubmit} className="login-form">
@@ -143,3 +143,5 @@ function Login({ onLogin }) {
 }
 
 export default Login;
+
+// End of file: frontend/src/pages/login.js
